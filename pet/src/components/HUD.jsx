@@ -3,7 +3,7 @@ import { createFigure } from '../figures/stickFigure.js';
 
 const COLORS = ['#334155', '#b91c1c', '#15803d', '#1d4ed8', '#7e22ce', '#c2410c'];
 
-export function HUD({ runningRef, figuresRef, scale, onScaleChange }) {
+export function HUD({ runningRef, figuresRef, scale, onScaleChange, stroke, onStrokeChange }) {
   const [paused, setPaused] = useState(false);
 
   function togglePause() {
@@ -25,6 +25,9 @@ export function HUD({ runningRef, figuresRef, scale, onScaleChange }) {
   function handleScaleInput(event) {
     onScaleChange(Number(event.target.value));
   }
+  function handleStrokeInput(event) {
+    onStrokeChange(Number(event.target.value));
+  }
 
   return (
     <>
@@ -40,6 +43,19 @@ export function HUD({ runningRef, figuresRef, scale, onScaleChange }) {
           step="0.05"
           value={scale}
           onChange={handleScaleInput}
+          style={sliderStyle}
+        />
+        <label htmlFor="stroke-width" style={strokeWidthStyle}>
+          Stroke: {stroke}px
+        </label>
+        <input
+          id="stroke-width"
+          type="range"
+          min="0.5"
+          max="8"
+          step="0.05"
+          value={stroke}
+          onChange={handleStrokeInput}
           style={sliderStyle}
         />
       </div>
@@ -73,6 +89,11 @@ const scaleModalStyle = {
 };
 
 const scaleLabelStyle = {
+  color: '#fff',
+  fontSize: 13,
+  fontFamily: 'system-ui, sans-serif',
+};
+const strokeWidthStyle = {
   color: '#fff',
   fontSize: 13,
   fontFamily: 'system-ui, sans-serif',

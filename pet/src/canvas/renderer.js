@@ -2,7 +2,7 @@ import { LIMBS } from '../figures/stickFigure.js';
 
 const HEAD_RADIUS = 24;
 
-export function drawFigure(ctx, figure, scale = 1) {
+export function drawFigure(ctx, figure, scale = 1, stroke = 1) {
   const { x, y, facing, joints, color, strokeWidth } = figure;
 
   ctx.save();
@@ -10,7 +10,7 @@ export function drawFigure(ctx, figure, scale = 1) {
   ctx.scale(facing * scale, scale);
 
   ctx.strokeStyle = color;
-  ctx.lineWidth = strokeWidth;
+  ctx.lineWidth = strokeWidth * stroke;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 

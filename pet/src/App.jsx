@@ -9,15 +9,22 @@ function App() {
   const figuresRef = useRef([createFigure({ x: window.innerWidth / 2, y: window.innerHeight - 10 })]);
   const runningRef = useRef(true);
   const scaleRef = useRef(1);
+  const strokeRef = useRef(3)
   const [scale, setScale] = useState(1);
+  const [stroke, setStroke] = useState(3);
 
   function handleScaleChange(nextScale) {
     scaleRef.current = nextScale;
     setScale(nextScale);
   }
 
+  const handleStrokeChange = (strokeWidth) => {
+    strokeRef.current = strokeWidth;
+    setStroke(strokeWidth)
+  }
+
   useEffect(() => {
-    const stopLoop = startLoop(canvasRef, figuresRef, runningRef, scaleRef);
+    const stopLoop = startLoop(canvasRef, figuresRef, runningRef, scaleRef, strokeRef);
     const stopResize = listenResize(() => {
       const canvas = canvasRef.current;
       if (canvas) {
@@ -50,6 +57,8 @@ function App() {
         figuresRef={figuresRef}
         scale={scale}
         onScaleChange={handleScaleChange}
+        stroke={stroke}
+        onStrokeChange={handleStrokeChange}
       />
     </>
   );

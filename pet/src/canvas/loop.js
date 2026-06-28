@@ -3,7 +3,7 @@ import { drawFigure } from './renderer.js';
 import { updateFigureState } from '../figures/figureState.js';
 import { updateWander } from '../behaviour/wander.js';
 
-export function startLoop(canvasRef, figuresRef, runningRef, scaleRef) {
+export function startLoop(canvasRef, figuresRef, runningRef, scaleRef, strokeRef) {
   let rafId;
   function tick() {
     const canvas = canvasRef.current;
@@ -25,7 +25,7 @@ export function startLoop(canvasRef, figuresRef, runningRef, scaleRef) {
       for (const figure of figuresRef.current) {
         updateWander(figure, viewport);
         updateFigureState(figure);
-        drawFigure(ctx, figure, scaleRef.current);
+        drawFigure(ctx, figure, scaleRef.current, strokeRef.current);
       }
     }
 
