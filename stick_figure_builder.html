@@ -1,0 +1,183 @@
+
+<style>
+canvas { display: block; border: 0.5px solid var(--border); border-radius: var(--radius); background: var(--surface-2); cursor: crosshair; }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+label { font-size: 13px; color: var(--text-secondary); }
+select, input[type=range] { font-size: 13px; }
+.stat { font-size: 12px; color: var(--text-muted); min-width: 80px; }
+</style>
+
+<h2 class="sr-only">Interactive stick figure canvas with draggable joints</h2>
+
+<div class="controls">
+  <label>Color</label>
+  <input type="color" id="colorPicker" value="#334155" style="height:28px;width:40px;border:0.5px solid var(--border);border-radius:4px;cursor:pointer;">
+  <label>Stroke</label>
+  <input type="range" id="strokeWidth" min="1" max="8" value="3" style="width:80px;">
+  <span class="stat" id="strokeVal">3px</span>
+  <button onclick="resetFigure()" style="margin-left:auto;">↺ Reset pose</button>
+  <button onclick="sendPrompt('Can you add animation or more features to this stick figure builder?')">Enhance ↗</button>
+</div>
+
+<canvas id="c" width="680" height="420"></canvas>
+<p style="font-size:12px;color:var(--text-muted);margin-top:8px;">Drag any joint to pose the figure.</p>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const colorPicker = document.getElementById('colorPicker');
+const strokeSlider = document.getElementById('strokeWidth');
+const strokeVal = document.getElementById('strokeVal');
+
+const W = 680, H = 420;
+canvas.width = W; canvas.height = H;
+
+let strokeColor = '#334155';
+let strokeW = 3;
+
+colorPicker.addEventListener('input', e => { strokeColor = e.target.value; draw(); });
+strokeSlider.addEventListener('input', e => { strokeW = +e.target.value; strokeVal.textContent = strokeW + 'px'; draw(); });
+
+const defaultJoints = () => ({
+  head:    { x: 340, y: 80 },
+  neck:    { x: 340, y: 115 },
+  lshoulder: { x: 295, y: 145 },
+  rshoulder: { x: 385, y: 145 },
+  lelbow:  { x: 265, y: 195 },
+  relbow:  { x: 415, y: 195 },
+  lhand:   { x: 245, y: 245 },
+  rhand:   { x: 435, y: 245 },
+  hip:     { x: 340, y: 215 },
+  lhip:    { x: 315, y: 240 },
+  rhip:    { x: 365, y: 240 },
+  lknee:   { x: 305, y: 305 },
+  rknee:   { x: 375, y: 305 },
+  lfoot:   { x: 295, y: 370 },
+  rfoot:   { x: 385, y: 370 },
+});
+
+let joints = defaultJoints();
+
+const RADIUS = 8;
+const HEAD_R = 28;
+
+function resetFigure() {
+  joints = defaultJoints();
+  draw();
+}
+
+function line(a, b) {
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.lineTo(b.x, b.y);
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = strokeW;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+}
+
+function dot(j, r = RADIUS) {
+  ctx.beginPath();
+  ctx.arc(j.x, j.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = strokeColor + '33';
+  ctx.fill();
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  const j = joints;
+
+  ctx.lineWidth = strokeW;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Torso
+  line(j.neck, j.hip);
+  line(j.lshoulder, j.rshoulder);
+  line(j.lhip, j.rhip);
+  line(j.neck, j.lshoulder);
+  line(j.neck, j.rshoulder);
+  line(j.hip, j.lhip);
+  line(j.hip, j.rhip);
+
+  // Arms
+  line(j.lshoulder, j.lelbow);
+  line(j.lelbow, j.lhand);
+  line(j.rshoulder, j.relbow);
+  line(j.relbow, j.rhand);
+
+  // Legs
+  line(j.lhip, j.lknee);
+  line(j.lknee, j.lfoot);
+  line(j.rhip, j.rknee);
+  line(j.rknee, j.rfoot);
+
+  // Neck
+  line(j.head, j.neck);
+
+  // Head circle
+  ctx.beginPath();
+  ctx.arc(j.head.x, j.head.y, HEAD_R, 0, Math.PI * 2);
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = strokeW;
+  ctx.fillStyle = 'transparent';
+  ctx.stroke();
+
+  // Joints (draggable dots)
+  Object.entries(joints).forEach(([k, jt]) => {
+    if (k === 'head') return;
+    dot(jt);
+  });
+}
+
+// Dragging
+let dragging = null;
+const jointKeys = Object.keys(defaultJoints());
+
+function getJointAt(x, y) {
+  for (const k of jointKeys) {
+    const j = joints[k];
+    const r = k === 'head' ? HEAD_R : RADIUS;
+    const dx = x - j.x, dy = y - j.y;
+    if (dx*dx + dy*dy <= r*r) return k;
+  }
+  return null;
+}
+
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width;
+  const scaleY = H / rect.height;
+  if (e.touches) {
+    return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
+  }
+  return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+}
+
+canvas.addEventListener('mousedown', e => {
+  const pos = getPos(e);
+  dragging = getJointAt(pos.x, pos.y);
+  if (dragging) canvas.style.cursor = 'grabbing';
+});
+canvas.addEventListener('mousemove', e => {
+  const pos = getPos(e);
+  if (dragging) {
+    joints[dragging].x = pos.x;
+    joints[dragging].y = pos.y;
+    draw();
+  } else {
+    canvas.style.cursor = getJointAt(pos.x, pos.y) ? 'grab' : 'default';
+  }
+});
+canvas.addEventListener('mouseup', () => { dragging = null; canvas.style.cursor = 'default'; });
+canvas.addEventListener('mouseleave', () => { dragging = null; });
+
+canvas.addEventListener('touchstart', e => { e.preventDefault(); const pos = getPos(e); dragging = getJointAt(pos.x, pos.y); }, { passive: false });
+canvas.addEventListener('touchmove', e => { e.preventDefault(); if (!dragging) return; const pos = getPos(e); joints[dragging].x = pos.x; joints[dragging].y = pos.y; draw(); }, { passive: false });
+canvas.addEventListener('touchend', () => { dragging = null; });
+
+draw();
+</script>
