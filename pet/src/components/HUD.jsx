@@ -38,7 +38,7 @@ export function HUD({ runningRef, figuresRef, scale, onScaleChange, stroke, onSt
         <input
           id="figure-scale"
           type="range"
-          min="0.5"
+          min="0.1"
           max="2"
           step="0.05"
           value={scale}

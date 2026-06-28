@@ -8,9 +8,9 @@ function App() {
   const canvasRef = useRef(null);
   const figuresRef = useRef([createFigure({ x: window.innerWidth / 2, y: window.innerHeight - 10 })]);
   const runningRef = useRef(true);
-  const scaleRef = useRef(1);
+  const scaleRef = useRef(0.5);
   const strokeRef = useRef(3)
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(0.5);
   const [stroke, setStroke] = useState(3);
 
   function handleScaleChange(nextScale) {
