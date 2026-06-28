@@ -15,7 +15,11 @@ select, input[type=range] { font-size: 13px; }
   <label>Stroke</label>
   <input type="range" id="strokeWidth" min="1" max="8" value="3" style="width:80px;">
   <span class="stat" id="strokeVal">3px</span>
+  <label>Scale</label>
+  <input type="range" id="scaleRatio" min="0.5" max="2" step="0.1" value="1" style="width:80px;">
+  <span class="stat" id="scaleVal">1.0x</span>
   <button onclick="resetFigure()" style="margin-left:auto;">↺ Reset pose</button>
+  <button onclick="printRelativeCoordinates()">📋 Print coords</button>
   <button onclick="sendPrompt('Can you add animation or more features to this stick figure builder?')">Enhance ↗</button>
 </div>
 
@@ -28,15 +32,19 @@ const ctx = canvas.getContext('2d');
 const colorPicker = document.getElementById('colorPicker');
 const strokeSlider = document.getElementById('strokeWidth');
 const strokeVal = document.getElementById('strokeVal');
+const scaleSlider = document.getElementById('scaleRatio');
+const scaleVal = document.getElementById('scaleVal');
 
 const W = 680, H = 420;
 canvas.width = W; canvas.height = H;
 
 let strokeColor = '#334155';
 let strokeW = 3;
+let scale = 1;
 
 colorPicker.addEventListener('input', e => { strokeColor = e.target.value; draw(); });
 strokeSlider.addEventListener('input', e => { strokeW = +e.target.value; strokeVal.textContent = strokeW + 'px'; draw(); });
+scaleSlider.addEventListener('input', e => { scale = +e.target.value; scaleVal.textContent = scale.toFixed(1) + 'x'; draw(); });
 
 const defaultJoints = () => ({
   head:    { x: 340, y: 80 },
@@ -66,6 +74,23 @@ function resetFigure() {
   draw();
 }
 
+function printRelativeCoordinates() {
+  const defaultAbsolute = defaultJoints();
+  const reference = defaultAbsolute.hip; // Use hip as (0,0)
+  
+  const relative = {};
+  for (const [name, pos] of Object.entries(defaultAbsolute)) {
+    relative[name] = {
+      x: pos.x - reference.x,
+      y: pos.y - reference.y
+    };
+  }
+  
+  console.log('Relative coordinates (hip as origin):');
+  console.log(JSON.stringify(relative, null, 2));
+  alert('Coordinates printed to console (F12 to view)');
+}
+
 function line(a, b) {
   ctx.beginPath();
   ctx.moveTo(a.x, a.y);
@@ -89,47 +114,58 @@ function dot(j, r = RADIUS) {
 function draw() {
   ctx.clearRect(0, 0, W, H);
   const j = joints;
+  
+  // Apply scaling relative to canvas center
+  const centerX = W / 2, centerY = H / 2;
+  const scaledJoints = {};
+  for (const [name, pos] of Object.entries(j)) {
+    scaledJoints[name] = {
+      x: centerX + (pos.x - centerX) * scale,
+      y: centerY + (pos.y - centerY) * scale
+    };
+  }
+  const sj = scaledJoints;
 
   ctx.lineWidth = strokeW;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
   // Torso
-  line(j.neck, j.hip);
-  line(j.lshoulder, j.rshoulder);
-  line(j.lhip, j.rhip);
-  line(j.neck, j.lshoulder);
-  line(j.neck, j.rshoulder);
-  line(j.hip, j.lhip);
-  line(j.hip, j.rhip);
+  line(sj.neck, sj.hip);
+  line(sj.lshoulder, sj.rshoulder);
+  line(sj.lhip, sj.rhip);
+  line(sj.neck, sj.lshoulder);
+  line(sj.neck, sj.rshoulder);
+  line(sj.hip, sj.lhip);
+  line(sj.hip, sj.rhip);
 
   // Arms
-  line(j.lshoulder, j.lelbow);
-  line(j.lelbow, j.lhand);
-  line(j.rshoulder, j.relbow);
-  line(j.relbow, j.rhand);
+  line(sj.lshoulder, sj.lelbow);
+  line(sj.lelbow, sj.lhand);
+  line(sj.rshoulder, sj.relbow);
+  line(sj.relbow, sj.rhand);
 
   // Legs
-  line(j.lhip, j.lknee);
-  line(j.lknee, j.lfoot);
-  line(j.rhip, j.rknee);
-  line(j.rknee, j.rfoot);
+  line(sj.lhip, sj.lknee);
+  line(sj.lknee, sj.lfoot);
+  line(sj.rhip, sj.rknee);
+  line(sj.rknee, sj.rfoot);
 
   // Neck
-  line(j.head, j.neck);
+  line(sj.head, sj.neck);
 
   // Head circle
   ctx.beginPath();
-  ctx.arc(j.head.x, j.head.y, HEAD_R, 0, Math.PI * 2);
+  ctx.arc(sj.head.x, sj.head.y, HEAD_R * scale, 0, Math.PI * 2);
   ctx.strokeStyle = strokeColor;
   ctx.lineWidth = strokeW;
   ctx.fillStyle = 'transparent';
   ctx.stroke();
 
   // Joints (draggable dots)
-  Object.entries(joints).forEach(([k, jt]) => {
+  Object.entries(scaledJoints).forEach(([k, jt]) => {
     if (k === 'head') return;
-    dot(jt);
+    dot(jt, RADIUS * scale);
   });
 }
 
@@ -138,10 +174,13 @@ let dragging = null;
 const jointKeys = Object.keys(defaultJoints());
 
 function getJointAt(x, y) {
+  const centerX = W / 2, centerY = H / 2;
   for (const k of jointKeys) {
     const j = joints[k];
-    const r = k === 'head' ? HEAD_R : RADIUS;
-    const dx = x - j.x, dy = y - j.y;
+    const scaledX = centerX + (j.x - centerX) * scale;
+    const scaledY = centerY + (j.y - centerY) * scale;
+    const r = k === 'head' ? HEAD_R * scale : RADIUS * scale;
+    const dx = x - scaledX, dy = y - scaledY;
     if (dx*dx + dy*dy <= r*r) return k;
   }
   return null;
@@ -165,8 +204,10 @@ canvas.addEventListener('mousedown', e => {
 canvas.addEventListener('mousemove', e => {
   const pos = getPos(e);
   if (dragging) {
-    joints[dragging].x = pos.x;
-    joints[dragging].y = pos.y;
+    // Convert scaled position back to unscaled coordinate
+    const centerX = W / 2, centerY = H / 2;
+    joints[dragging].x = centerX + (pos.x - centerX) / scale;
+    joints[dragging].y = centerY + (pos.y - centerY) / scale;
     draw();
   } else {
     canvas.style.cursor = getJointAt(pos.x, pos.y) ? 'grab' : 'default';
@@ -176,7 +217,7 @@ canvas.addEventListener('mouseup', () => { dragging = null; canvas.style.cursor 
 canvas.addEventListener('mouseleave', () => { dragging = null; });
 
 canvas.addEventListener('touchstart', e => { e.preventDefault(); const pos = getPos(e); dragging = getJointAt(pos.x, pos.y); }, { passive: false });
-canvas.addEventListener('touchmove', e => { e.preventDefault(); if (!dragging) return; const pos = getPos(e); joints[dragging].x = pos.x; joints[dragging].y = pos.y; draw(); }, { passive: false });
+canvas.addEventListener('touchmove', e => { e.preventDefault(); if (!dragging) return; const pos = getPos(e); const centerX = W / 2, centerY = H / 2; joints[dragging].x = centerX + (pos.x - centerX) / scale; joints[dragging].y = centerY + (pos.y - centerY) / scale; draw(); }, { passive: false });
 canvas.addEventListener('touchend', () => { dragging = null; });
 
 draw();

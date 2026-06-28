@@ -1,13 +1,13 @@
 import { LIMBS } from '../figures/stickFigure.js';
 
-const HEAD_RADIUS = 12;
+const HEAD_RADIUS = 24;
 
-export function drawFigure(ctx, figure) {
+export function drawFigure(ctx, figure, scale = 1) {
   const { x, y, facing, joints, color, strokeWidth } = figure;
 
   ctx.save();
   ctx.translate(x, y);
-  ctx.scale(facing, 1);
+  ctx.scale(facing * scale, scale);
 
   ctx.strokeStyle = color;
   ctx.lineWidth = strokeWidth;

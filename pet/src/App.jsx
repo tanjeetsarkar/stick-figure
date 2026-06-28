@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createFigure } from './figures/stickFigure.js';
 import { startLoop } from './canvas/loop.js';
 import { listenResize } from './canvas/viewport.js';
@@ -8,9 +8,16 @@ function App() {
   const canvasRef = useRef(null);
   const figuresRef = useRef([createFigure({ x: window.innerWidth / 2, y: window.innerHeight - 10 })]);
   const runningRef = useRef(true);
+  const scaleRef = useRef(1);
+  const [scale, setScale] = useState(1);
+
+  function handleScaleChange(nextScale) {
+    scaleRef.current = nextScale;
+    setScale(nextScale);
+  }
 
   useEffect(() => {
-    const stopLoop = startLoop(canvasRef, figuresRef, runningRef);
+    const stopLoop = startLoop(canvasRef, figuresRef, runningRef, scaleRef);
     const stopResize = listenResize(() => {
       const canvas = canvasRef.current;
       if (canvas) {
@@ -38,7 +45,12 @@ function App() {
           zIndex: 9999,
         }}
       />
-      <HUD runningRef={runningRef} figuresRef={figuresRef} />
+      <HUD
+        runningRef={runningRef}
+        figuresRef={figuresRef}
+        scale={scale}
+        onScaleChange={handleScaleChange}
+      />
     </>
   );
 }

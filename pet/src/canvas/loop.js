@@ -3,9 +3,8 @@ import { drawFigure } from './renderer.js';
 import { updateFigureState } from '../figures/figureState.js';
 import { updateWander } from '../behaviour/wander.js';
 
-export function startLoop(canvasRef, figuresRef, runningRef) {
+export function startLoop(canvasRef, figuresRef, runningRef, scaleRef) {
   let rafId;
-
   function tick() {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -26,7 +25,7 @@ export function startLoop(canvasRef, figuresRef, runningRef) {
       for (const figure of figuresRef.current) {
         updateWander(figure, viewport);
         updateFigureState(figure);
-        drawFigure(ctx, figure);
+        drawFigure(ctx, figure, scaleRef.current);
       }
     }
 
