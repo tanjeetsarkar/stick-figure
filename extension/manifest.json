@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Stick Figure Pet",
+  "version": "1.0.0",
+  "description": "A stick figure that roams over any web page.",
+  "permissions": ["storage"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Stick Figure Pet"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "stick-figure-pet@localhost",
+      "strict_min_version": "109.0"
+    }
+  }
+}
